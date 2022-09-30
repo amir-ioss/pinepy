@@ -1,0 +1,8 @@
+https://www.learndatasci.com/tutorials/algo-trading-crypto-bot-python-strategy-backtesting/
+
+https://www.programcreek.com/python/example/92310/talib.SMA
+
+
+CCXT EXAMPLES
+------------------
+https://github.com/ccxt/ccxt/tree/master/examples/py

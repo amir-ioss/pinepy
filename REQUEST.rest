@@ -1,0 +1,1 @@
+GET https://api3.binance.com/api/v3/trades?symbol=BTCUSDT

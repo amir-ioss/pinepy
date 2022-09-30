@@ -1,0 +1,110 @@
+[
+  {
+    "pair": "BTC/USDT",
+    "low": { "exchange": "binanceusdm", "price": 19777.5 },
+    "high": { "exchange": "wazirx", "price": 19799.0 },
+    "diff": 21.5
+  },
+  {
+    "pair": "ETH/USDT",
+    "low": { "exchange": "binanceusdm", "price": 1065.9 },
+    "high": { "exchange": "wazirx", "price": 1072.03 },
+    "diff": 6.129999999999882
+  },
+  {
+    "pair": "BCH/USDT",
+    "low": { "exchange": "binanceus", "price": 99.34 },
+    "high": { "exchange": "wazirx", "price": 101.3 },
+    "diff": 1.9599999999999937
+  },
+  {
+    "pair": "XMR/USDT",
+    "low": { "exchange": "wazirx", "price": 123.5 },
+    "high": { "exchange": "bigone", "price": 125.35 },
+    "diff": 1.8499999999999943
+  },
+  {
+    "pair": "DASH/USDT",
+    "low": { "exchange": "binanceusdm", "price": 41.09 },
+    "high": { "exchange": "wazirx", "price": 42.3 },
+    "diff": 1.2099999999999937
+  },
+  {
+    "pair": "MKR/USDT",
+    "low": { "exchange": "binanceusdm", "price": 860.3 },
+    "high": { "exchange": "wazirx", "price": 867.0 },
+    "diff": 6.7000000000000455
+  },
+  {
+    "pair": "YFI/USDT",
+    "low": { "exchange": "binanceus", "price": 5634.59 },
+    "high": { "exchange": "wazirx", "price": 5694.21 },
+    "diff": 59.61999999999989
+  },
+  {
+    "pair": "PAXG/USDT",
+    "low": { "exchange": "wazirx", "price": 1725.0 },
+    "high": { "exchange": "binanceus", "price": 1742.83 },
+    "diff": 17.829999999999927
+  },
+  {
+    "pair": "YFII/USDT",
+    "low": { "exchange": "wazirx", "price": 1063.2 },
+    "high": { "exchange": "binance", "price": 1086.0 },
+    "diff": 22.799999999999955
+  },
+  {
+    "pair": "EGLD/USDT",
+    "low": { "exchange": "binanceus", "price": 49.92 },
+    "high": { "exchange": "wazirx", "price": 51.75 },
+    "diff": 1.8299999999999983
+  },
+  {
+    "pair": "AAVE/USDT",
+    "low": { "exchange": "binanceusdm", "price": 67.22 },
+    "high": { "exchange": "wazirx", "price": 68.3 },
+    "diff": 1.0799999999999983
+  },
+  {
+    "pair": "AR/USDT",
+    "low": { "exchange": "bigone", "price": 11.0684 },
+    "high": { "exchange": "wazirx", "price": 12.091 },
+    "diff": 1.0225999999999988
+  },
+  {
+    "pair": "QNT/USDT",
+    "low": { "exchange": "wazirx", "price": 82.0 },
+    "high": { "exchange": "binance", "price": 83.2 },
+    "diff": 1.2000000000000028
+  },
+  {
+    "pair": "FARM/USDT",
+    "low": { "exchange": "binance", "price": 42.1 },
+    "high": { "exchange": "wazirx", "price": 45.5 },
+    "diff": 3.3999999999999986
+  },
+  {
+    "pair": "QUICK/USDT",
+    "low": { "exchange": "wazirx", "price": 52.1 },
+    "high": { "exchange": "binance", "price": 54.6 },
+    "diff": 2.5
+  },
+  {
+    "pair": "ILV/USDT",
+    "low": { "exchange": "wazirx", "price": 93.1 },
+    "high": { "exchange": "binance", "price": 95.7 },
+    "diff": 2.6000000000000085
+  },
+  {
+    "pair": "BNX/USDT",
+    "low": { "exchange": "wazirx", "price": 107.6 },
+    "high": { "exchange": "binance", "price": 114.7 },
+    "diff": 7.1000000000000085
+  },
+  {
+    "pair": "BSV/USDT",
+    "low": { "exchange": "bigone", "price": 51.45 },
+    "high": { "exchange": "wazirx", "price": 57.98 },
+    "diff": 6.529999999999994
+  }
+]
