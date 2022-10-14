@@ -16,7 +16,7 @@ import websockets
 
 from _help import highest, lowest, atr__, pine_rma, ema
 
-class HKA:
+class ChandelierExit:
 
     def __init__(self, coin):
         interval = '5m'
@@ -163,6 +163,6 @@ class HKA:
 
 
 
-bot = HKA({"symbol": "XRP/USDT"})
+bot = ChandelierExit({"symbol": "XRP/USDT"})
 bot.run()
 

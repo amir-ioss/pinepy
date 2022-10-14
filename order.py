@@ -14,7 +14,7 @@ class order:
         self.exchange = ccxt.binance({
             'apiKey': "KrtAkDbOxGxovcGDORa1TmOduII7R5SgkbfxdxVJss0OZ4o7ylUKJOqwx1Jjubgb",
             'secret': "TDNzfpSmfX7l8lklaO5Ydq5Yvtq293PxGTStJeecwjD766VztgaxDxTWXj17w688",
-            'enableRateLimit': True,
+            # 'enableRateLimit': True,
         })
         self.exchange.setSandboxMode(True)
 
@@ -26,23 +26,24 @@ class order:
 
         ### check balance
         try:
+            base = "BUSD" # USDT
             # balances = self.exchange.fetch_balance()
             # print(balances['free']) # total 
-            assetbalance = (self.exchange.fetch_free_balance()["USDT"])
-            print("USDT ------------------------------------------- : ", assetbalance)
+            # assetbalance = (self.exchange.fetch_free_balance()["USDT"])
+            assetbalance = (self.exchange.fetch_free_balance()[base])
+            print(base+ " ------------------------------------------- : ", assetbalance)
         except:
             print("Oops!", sys.exc_info()[0], "occurred.")
-        
-
+    
         pass
 
 
-amount = 203.17730983
-symbol = 'TRX/USDT' 
+amount = 202.1
+symbol = 'TRX/BUSD' 
 # order = order(symbol, 'market', 'buy', amount , {})
 # order = order(symbol, 'market', 'sell', amount , {})
 
 # my balance on 29
 # {'BNB': 1000.0, 'BTC': 1.0, 'BUSD': 10000.0, 'ETH': 100.0, 'LTC': 500.0, 'TRX': 500000.0, 'USDT': 10000.0, 'XRP': 50000.0}
 
-# usdt balance 9999.984385
+# usdt balance (5/10/22) 9999.99409

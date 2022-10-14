@@ -1,0 +1,282 @@
+//@version=5
+// indicator(title="Relative Strength STR", shorttitle="AMI", format=format.price, precision=2, timeframe="", timeframe_gaps=true)
+// indicator(title="Relative Strength STR", shorttitle="AMI", format=format.price, precision=2, timeframe="", timeframe_gaps=true, overlay=true)
+indicator(title="ABBASY BUY/SELL", shorttitle="AMI", overlay=true)
+
+rsiLengthInput = input.int(14, minval=1, title="RSI Length", group="RSI Settings")
+rsiSourceInput = input.source(close, "Source", group="RSI Settings")
+maTypeInput = input.string("SMA", title="MA Type", options=["SMA", "Bollinger Bands", "EMA", "SMMA (RMA)", "WMA", "VWMA"], group="MA Settings")
+maLengthInput = input.int(14, title="MA Length", group="MA Settings")
+bbMultInput = input.float(2.0, minval=0.001, maxval=50, title="BB StdDev", group="MA Settings")
+
+
+
+
+
+up = ta.rma(math.max(ta.change(rsiSourceInput), 0), rsiLengthInput)
+down = ta.rma(-math.min(ta.change(rsiSourceInput), 0), rsiLengthInput)
+rsi = down == 0 ? 100 : up == 0 ? 0 : 100 - (100 / (1 + up / down))
+rsiMA = ta.sma(rsi, maLengthInput)
+
+rsiMA25 =  ta.sma(rsi, 25)
+rsiMA50 =  ta.sma(rsi, 50)
+isBB = maTypeInput == "Bollinger Bands"
+
+// plot(rsi, "RSI", color=#7E57C2)
+// plot(rsiMA, "RSI-based MA", color=color.yellow)
+// plot(rsiMA50, "RSI-based MA50", color=#97c9a6)
+// plot(rsiMA25, "RSI-based MA25", color=#444444)
+
+var placeOrder = false
+var extra = 0
+var support = false 
+var show_yellowExit = false
+var show_greenEntry = false
+var trendBlueLength = 0
+var sellPrice = close
+forceExit = false
+
+changeMA = ta.change(rsiMA, 2)
+changeMA25 = ta.change(rsiMA25, 2)
+changeMA50 = ta.change(rsiMA50, 2)
+
+trendBlue = changeMA > 0
+trendYellow = changeMA25 > 0.001
+trendGreen = changeMA50 > 0.1
+
+
+
+trend = trendYellow or trendGreen 
+
+entryFilter = rsi > rsiMA50 
+// enter = ta.crossover(rsi , rsiMA) and rsiMA < 45 and placeOrder == false
+enter = ta.crossover(rsi , rsiMA50)  and placeOrder == false and rsiMA25 < rsiMA25[6] and trend and entryFilter
+// enter = ta.crossover(rsi , rsiMA50)  and placeOrder == false and rsiMA25 < rsiMA25[6] and rsiMA25 < 60
+    
+greenEnter = ta.crossover(rsi , rsiMA25)  and placeOrder == false
+// yellowExit = ta.crossunder(rsi, rsiMA) or ta.crossunder(rsi, rsiMA25)  or ta.crossunder(rsi, rsiMA50)  and placeOrder == true
+yellowExit = ta.crossunder(rsi, rsiMA25) and placeOrder == true
+
+
+
+
+
+
+// if(yellowExit)
+//     show_yellowExit := true
+
+
+
+
+// rsiUpperBand = hline(70, "RSI Upper Band", color=#787B86)
+// hline(50, "RSI Middle Band", color=color.new(#787B86, 50))
+// rsiLowerBand = hline(30, "RSI Lower Band", color=#787B86)
+// fill(rsiUpperBand, rsiLowerBand, color=color.rgb(126, 87, 194, 90), title="RSI Background Fill")
+// bbUpperBand = plot(isBB ? rsiMA + ta.stdev(rsi, maLengthInput) * bbMultInput : na, title = "Upper Bollinger Band", color=color.green)
+// bbLowerBand = plot(isBB ? rsiMA - ta.stdev(rsi, maLengthInput) * bbMultInput : na, title = "Lower Bollinger Band", color=color.green)
+// fill(bbUpperBand, bbLowerBand, color= isBB ? color.new(color.green, 90) : na, title="Bollinger Bands Background Fill")
+
+
+
+
+// Calculating
+signal_length = input.int(title="Signal Smoothing",  minval = 1, maxval = 50, defval = 9)
+
+fast_ma = ta.ema(close, 12) 
+slow_ma = ta.ema(close, 26)
+macd = fast_ma - slow_ma
+signal =  ta.ema(macd, signal_length)
+hist = macd - signal
+hline(0, "Zero Line", color=color.new(#787B86, 50))
+// // plot(hist, title="Histogram", style=plot.style_columns, color=(hist>=0 ? (hist[1] < hist ? col_grow_above : col_fall_above) : (hist[1] < hist ? col_grow_below : col_fall_below)))
+
+// plot(macd, title="MACD", color=color.green)
+// plot(signal, title="Signal", color=color.red)
+
+
+
+// // price action remove the sell
+// if (not trend)
+//     greenEnter := false
+    
+// // force to enter when cross rsi ma25
+if trendYellow[1] and trendGreen and not placeOrder and entryFilter
+    enter  := true
+
+exit = ta.crossunder(macd, signal)
+// exit = false
+
+if not trendYellow and placeOrder and not trendGreen[3] and show_greenEntry and trendBlueLength > 3
+    exit  := true
+    show_yellowExit :=  false
+   
+
+
+// // force to exit when not find trend
+if not trend and placeOrder
+    exit  := true
+    
+// force to exit when yellowExit shown
+if yellowExit and not trendGreen 
+    if ta.crossunder(rsi, rsiMA) or ta.crossunder(rsi, rsiMA25) or ta.crossunder(rsi, rsiMA50)
+        // forceExit just for indicate
+        forceExit := true 
+        exit  := true
+
+// skip exit if trend on 
+if trendGreen or trendBlue
+    exit  := false
+    
+// for entry of trendBlue with greenEntry
+if greenEnter 
+    show_greenEntry := true
+    
+if trendBlue
+    trendBlueLength := trendBlueLength+1
+    
+
+if show_greenEntry and trendBlueLength > 3 and entryFilter
+    enter  := true
+    
+if exit
+    sellPrice := close
+
+percDiff(num1, num2)=>
+    diff = num1 - num2
+    avrg = (num1 + num2) / 2
+    // (Difference/Average) × 100%
+    (diff / avrg) * 100
+
+
+// Filter Entery with price last sell price difference %
+// if enter
+    // diff = percDiff(sellPrice, close)
+    // // if close > sellPrice or math.abs(diff) > 2
+    // if math.abs(diff) > 2
+    //     enter := true
+    // else
+    //     enter := false
+    
+
+// EMA ////////////////////////////////////////////////////////////////////////////
+
+// ema1 = input(34, minval=1, maxval=300, title="EMA UpTrend")
+// shema = input(true, title="Show EMA Trend is Based On?")
+ema34 = 34
+usedEma = ta.ema(close, ema34)
+
+emaUpColor() => hlc3 >= usedEma
+emaDownColor() => hlc3  < usedEma
+
+changeEMA31 = ta.change(ema34, 2)
+
+trendEMA = changeEMA31 > 0.0
+// changeEMA31Color = trendEMA ? color.lime : color.red
+
+// action
+if( hlc3  <= usedEma)
+    enter := false
+
+changeEMA31Color = hlc3  >= usedEma and placeOrder ? color(#00b4d810) : na
+
+// barcolor(emaUpColor() ? color.lime: emaDownColor() ? color.red : na)
+// plot( usedEma ? usedEma : na, title="EMA", linewidth=1, color=changeEMA31Color)
+plotshape(usedEma, style=shape.cross, location=location.top,  color= hlc3  >= usedEma ? color(#5d606b80) : na)
+
+one = plot(usedEma, title='', style=plot.style_circles, linewidth=0, display=display.none, editable=false)
+two = plot(close, title='', style=plot.style_circles, linewidth=0, display=display.none, editable=false)
+fill(one, two, title='Short State Filling', color=changeEMA31Color, transp=0)
+
+
+// plot( usedEma ? usedEma : na, title="PLACED ORDER", linewidth=1, color=changeEMA31Color, style=plot.style_area)
+
+
+
+// 3MAS  ////////////////////////////////////////////////////////////////////////////
+
+
+
+plotshape(placeOrder ? false : enter ,  style=shape.labelup, location=location.top,  color=color.new(color.teal, 0), size=size.tiny)
+plotshape(placeOrder ? false : greenEnter,  style=shape.labelup, location=location.top,  color=color.new(color.green, 0))
+
+
+
+plotshape( placeOrder ? exit : false , style=shape.labeldown, location=location.top,  color=color.new(color.red, 0),  size=size.tiny)
+
+
+plotshape(placeOrder ? yellowExit : false,  style=shape.labelup, location=location.top,  color=color.new(color.yellow, 0))
+
+// plotshape(hist > -0.00001, style=shape.labeldown, location=location.bottom,  color=color.new(color.gray, 0))
+
+// trend detectors
+plotshape(trendBlue, style=shape.cross, location=location.top,  color=color.new( color.blue , 50))
+plotshape(trendGreen, style=shape.cross, location=location.bottom,  color=color(#5d606b80))
+plotshape(trendYellow, style=shape.cross, location=location.bottom,  color=color.new( color.lime, 20))
+
+// hline(40, "RSI Middle Band", color=color.new(#787B86, 0))
+// plot(45, title = "Close", color = color.blue, linewidth = 1, style =plot.style_line)
+// avrg = (rsiMA+ rsiMA25+rsiMA50)/3
+// plot(avrg, title = "Close", color = color.blue, linewidth = 2, style =plot.style_line)
+
+// BUY_SELL OVERLAY
+// plotshape(support, title='Buy Label', style=shape.labelup, location=location.belowbar, size=size.normal, text='SUPP', textcolor=color.new(color.white, 0), color=color.new(color.yellow, 0))
+
+
+plotshape(placeOrder ? false : enter, title='Buy Label', style=shape.labelup, location=location.belowbar, size=size.normal, text='Buy', textcolor=color.new(color.white, 0), color=color.new(color.green, 0))
+plotshape(placeOrder ? exit : false, title='Sell Label', style=shape.labeldown, location=location.abovebar, size=size.normal, text='Sell', textcolor=color.new(color.white, 0), color=color.new(color.red, 0))
+
+// extra
+// plotshape(show_greenEntry and trendBlueLength > 3, style=shape.cross, location=location.top,  color=color.new( color.fuchsia , 0))
+
+
+
+
+    
+// chandelier exit trend visulizar  ////////////////////////////////////////////////////////////////////////////
+
+// HIGHEST and LOWEST of last week
+// Calculate values
+// higest of 15 candles
+// 672
+
+week15 = 672
+// week15high = ta.sma(high, week15)
+
+hiHighs = ta.highest(high, week15)[1]
+loLows  = ta.lowest(low, week15)[1]
+
+// Plot values on the chart
+plot(series=hiHighs, color=color(#59839280), linewidth=1)
+plot(series=loLows, color=color(#59839280), linewidth=1)
+
+
+
+
+// AFTER TRADE
+
+var left_offset = bar_index
+var top_offset = close
+
+if enter and not placeOrder
+    left_offset := bar_index
+    top_offset := open
+    
+if exit and placeOrder and not na(left_offset)
+    // box.new(left, top, right, bottom, border_color, border_width, border_style, extend, xloc, bgcolor)
+    boxColor = close > top_offset ? color.purple : color.red
+    b = box.new(left_offset, top_offset, bar_index, close, boxColor, 1, line.style_solid, extend.none, xloc.bar_index, color.new(boxColor, 90))
+    // box.delete(b[1])
+
+if(enter and not placeOrder) 
+    placeOrder := true
+    
+if(exit and placeOrder) 
+    placeOrder := false
+    show_greenEntry := false
+    trendBlueLength := 0
+
+
+
+
+    
+

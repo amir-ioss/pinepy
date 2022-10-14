@@ -15,7 +15,6 @@ from log import p
 
 class Scalp:
     def __init__(self, coin, interval='5m', invest = 12.22):
-        p("bot created!")
         self.interval = interval
         # numberOfCandles = 205
         numberOfCandles = 1000
@@ -38,7 +37,7 @@ class Scalp:
             # do something
             time.sleep(1) # wait 5 minutes
             this_minute = datetime.today().minute
-            abs_num = this_minute/5
+            abs_num = this_minute/15
 
         
             # p(abs_num , self.count, self.oneTimeRun,  abs_num == self.count and not self.oneTimeRun, "else", abs_num != round(abs_num))
@@ -49,8 +48,8 @@ class Scalp:
 
             # if abs_num == self.count and not self.oneTimeRun: 
             if abs_num == round(abs_num) and not self.oneTimeRun:
-                #  new candles
-                ohlcv_ = Ohlcv(self.coin["symbol"], self.interval, None, 288)
+                #  new candles  
+                ohlcv_ = Ohlcv(self.coin["symbol"], self.interval, None, None)
                 kandles = Hkac(ohlcv_.ohlcv).kandles
                 
                 # p("run again")
@@ -92,14 +91,11 @@ class Scalp:
 
 
 #  MAIN
-bot = Scalp({"symbol": "TRX/BUSD"}, '5m', 12.22)
-# bot = Scalp({"symbol": "BTC/USDT"}, '5m', 125)
-# bot.run()
+bot = Scalp({"symbol": "BNB/BUSD"}, '15m', 120)
+# bot = Scalp({"symbol": "LUNC/USDT"}, '1m', 12.22)
+
 loop = asyncio.get_event_loop()
 loop.run_until_complete(bot.run())
 
 # loop.close()
-
-
-
 

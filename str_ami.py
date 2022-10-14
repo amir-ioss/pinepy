@@ -11,7 +11,7 @@ from log import p
 
 from _help import highest, lowest, atr__, pine_rma, ema
 
-class str_rsi:
+class str_ami:
     def __init__(self, kandles):
         self.kandles = kandles
         self.run()
@@ -33,8 +33,7 @@ class str_rsi:
         self.df = pd.DataFrame(self.kandles, columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'HKOpen', 'HKHigh', 'HKLow', 'HKClose'])
         # indicators
         self.rsi = talib.RSI(self.df['HKClose'], timeperiod = 14)
-        _rsiMA = talib.SMA(self.rsi, timeperiod = 14) 
-        self.rsiMA = np.nan_to_num(_rsiMA.to_numpy())
+        self.rsiMA = talib.SMA(self.rsi, timeperiod = 14) 
 
         # // MACD
 
@@ -56,7 +55,6 @@ class str_rsi:
             _current_close = _closes[:idx+1] 
             macd =  self.fast_ma[idx] -  self.slow_ma[idx]
             _signals.append(macd)
-     
 
             close = _closes[idx]
             time = datetime.fromtimestamp(self.kandles[idx][0]/1000)
@@ -69,7 +67,6 @@ class str_rsi:
             # p(self.df['HKOpen'][idx],self.df['HKHigh'][idx], self.df['HKLow'][idx],  self.df['HKClose'][idx], 
             #  "-----")
             signal = talib.EMA(np.nan_to_num(_signals), timeperiod = 9)
-            reversal = int(self.rsiMA[idx]) != int(self.rsiMA[idx-1])
             # p(format(close,'.4f'),"<---->",  placeOrder)
 
               # // var isBullish = false
@@ -82,7 +79,7 @@ class str_rsi:
                 enter = True
 
 
-            if enter and isTrend and macdSupport and reversal and not placeOrder:
+            if enter and isTrend and macdSupport and not placeOrder:
                 placeOrder = True
                 buyPrice = _opens[idx]
                 self.buyTime = self.kandles[idx][0]
@@ -115,6 +112,6 @@ class str_rsi:
         isBeginning = self.buyTime == self.kandles[-1][0] or  self.buyTime == self.kandles[-2][0]
         # # p(self.kandles[-1][6], "- new -", self.kandles[0][6])
         order = "BUY" if placeOrder else "SELL"
-        # p(order, self.buyTime, '--> ', self.kandles[-1][0], self.kandles[-2][0])
+        p(order, self.buyTime, '--> ', self.kandles[-1][0], self.kandles[-2][0])
         # order = "BUY" if placeOrder and not _order[-2] else "SELL" if not placeOrder and _order[-2] else "AWAIT"  
-        self.result = {"order": order, "buyPrice": buyPrice, "isBeginning": isBeginning, "candle": self.kandles[-1], 'chart' : self.kandles}
+        self.result = {"order": order, "buyPrice": buyPrice, "isBeginning": isBeginning, "candle": self.kandles[-1]}

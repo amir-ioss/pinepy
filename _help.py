@@ -1,5 +1,8 @@
 import math
 import numpy as np
+import pandas as pd
+
+from pyparsing import OneOrMore
 
 arr= [
  0.1
@@ -13,7 +16,7 @@ arr= [
 ,0.4272
 ,0.500]
 
-array = ["nan",0.414525
+array = [np.NaN, 0.414525
  ,0.416575 ,.408225
  ,0.4059   ,.397175 ,.390325
  ,0.390675 ]
@@ -30,10 +33,26 @@ def lowest(src, length = 1):
     # print("arr for highest->", _flip[:length+1])
     return result
 
+def crossover(src, src2,  index):
+    _flip = np.array(src)
+    flip = np.nan_to_num(np.flip(_flip))
+    _flip2 = np.array(src2)
+    flip2 = np.nan_to_num(np.flip(_flip2))
+    return flip[index] > flip2[index]
+
+def crossunder(src, src2,  index):
+    _flip = np.array(src)
+    flip = np.nan_to_num(np.flip(_flip))
+    _flip2 = np.array(src2)
+    flip2 = np.nan_to_num(np.flip(_flip2))
+    return flip[index] < flip2[index]
+
+
 # play
 
 # print(highet(arr, 2))
 # print(lowest(arr, 2))
+
 
 # longStopPrev = nz(longStop[1], longStop) 
 # longStop = ["nan"]
@@ -43,8 +62,10 @@ def lowest(src, length = 1):
 
 # print(highest(array, 20))
 
-# for idx in range(len(arr)):
-#     print(arr[:idx+1])
+# for idx in range(len(array)):
+#     # print(arr[:idx+1])
+#     print(crossover(array, arr, idx))
+#     print(crossunder(array, arr, idx))
 #     pass
 
 # print(len(arr))
