@@ -1,204 +1,227 @@
-from cmath import log
-from datetime import datetime
-import math
-from time import sleep
-from ohlcv import Ohlcv
-import talib
+import sys
+import os
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+
+
 import asyncio
-import json
+from datetime import datetime
+import time
+from _help.ohlcv import Ohlcv
+from _help.hkac import Hkac
 import calendar
+# from _help.order import order 
+import requests
+
+import talib
+import json
 import pandas as pd
 import numpy as np
-import client
-from log import p 
-from markets import markets
+from _help.log import p 
+from data.data_test import test_data 
+from data.dates import dates 
+from data.coins import coins
 
-from _help import highest, lowest, crossover, atr__, pine_rma, ema
+# UTILS
 
-class HKA:
+def price_percentage(num, per = 0.1):
+    return (num/100)*per
 
-    def __init__(self, coin):
-        interval = '1m'
-        # numberOfCandles = 205
-        numberOfCandles = 1000
-        self.coin = coin
+def percentage(num1, num2):
+    return 100-((num1/num2)*100)
 
-        now = datetime.utcnow()
-        unixtime = calendar.timegm(now.utctimetuple())
-        since = (unixtime - 60*60) * 1000 # UTC timestamp in milliseconds
-        # start_dt = datetime.fromtimestamp(ohlcv[0][0]/1000)
-
-        ohlcv_ = Ohlcv(self.coin["symbol"], interval, None, None)
-        # ohlcv_ = Ohlcv("DEGO/USDT", interval, since, numberOfCandles)
-        self.kandles = ohlcv_.ohlcv
-
-        
-
-    def run(self):
-        # print(self.kandles)
-        # for idx, item in enumerate(self.kandles):
-
-        # Open: (Open (previous candle) + Close (previous candle))/2
-        # Close: (Open + Low + Close + High)/4
-        # High: the same of the actual candle
-        # Low: the same of the actual candle
-        
-        # store prevs
-        placeOrder = False
-        buyPrice = 0
-        sellPrice = 0
-        _signals=[]
-        _profits = []
-   
-        extra = 0
-        support = False 
-        show_yellowExit = False
-        show_greenEntry = False
-        trendBlueLength = 0
-        forceExit = False
-        # isBearish = high < high[1]
-        bearishLength = 0
+def tpsl_price(num, per = 0.1):
+    return {"tp":num+price_percentage(num, per), "sl":num-price_percentage(num, per)}
 
 
+# TEST 
 
-        for idx in range(len(self.kandles)):
-            if idx < 1 : 
-                self.kandles[idx].append(self.kandles[idx][1])
-                self.kandles[idx].append(self.kandles[idx][2])
-                self.kandles[idx].append(self.kandles[idx][3])
-                self.kandles[idx].append(self.kandles[idx][4])
-                continue
+def PIVOTHIGH(high: np.ndarray, left:int, right: int):
+    pivots = np.roll(talib.MAX(high, left + 1 + right), -right)
+    pivots[pivots != high] = np.NaN
+    return pivots
 
-            # Heikin-Ashi
+def PIVOTLOW(low: np.ndarray, left:int, right: int):
+    pivots = np.roll(talib.MIN(low, left + 1 + right), -right)
+    pivots[pivots != low] = np.NaN
+    return pivots
 
-            # Candle	Regular Candlestick	Heikin Ashi Candlestick
-            # Open	Open0	(HAOpen(-1) + HAClose(-1))/2
-            # High	High0	MAX(High0, HAOpen0, HAClose0)
-            # Low	Low0	MIN(Low0, HAOpen0, HAClose0
-            # Close	Close0	(Open0 + High0 + Low0 + Close0)/4
+class Boat:
+    def __init__(self):
+        self.count = 0
+        self.oneTimeRun = False
+        self.coins = coins
+        self.dates = dates
+        self.month = []
+        pass
 
-            HKOpen = (self.kandles[idx-1][6] + self.kandles[idx-1][9]) / 2
-            HKClose = (self.kandles[idx][1] + self.kandles[idx][2] + self.kandles[idx][3] + self.kandles[idx][4]) / 4
-            HKHigh = max(self.kandles[idx][2], HKOpen, HKClose)
-            HKLow = min(self.kandles[idx][3], HKOpen, HKClose)
+    def run(self,):
+        while True:
+            p("\n                         ---- scanning ({0})  ----\n".format(len(self.coins)))
+            this_minute = datetime.today().minute
+            abs_num = this_minute/5
+            
+            if abs_num == round(abs_num):
+                print("TOP")
+                
 
-            self.kandles[idx].append(HKOpen)
-            self.kandles[idx].append(HKHigh)
-            self.kandles[idx].append(HKLow)
-            self.kandles[idx].append(HKClose)
-            # p(HKOpen, HKHigh, HKLow, HKClose) 
-
-        self.df = pd.DataFrame(self.kandles, columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'HKOpen', 'HKHigh', 'HKLow', 'HKClose'])
-        # indicators
-        self.rsi = talib.RSI(self.df['HKClose'], timeperiod = 14)
-        self.rsiMA = talib.SMA(self.rsi, timeperiod = 14) 
-        self.rsiMA25 =  talib.SMA(self.rsi, timeperiod = 25) 
-        self.rsiMA50 =  talib.SMA(self.rsi, timeperiod = 50) 
-
-        # // MACD
-
-        # fast_ma = ta.ema(close, 12)
-        # slow_ma = ta.ema(close, 26)
-        # macd = fast_ma - slow_ma
-        # signal = ta.ema(macd, 9)
-
-        self.fast_ma = talib.EMA(self.df['HKClose'], timeperiod = 12) 
-        self.slow_ma = talib.EMA(self.df['HKClose'], timeperiod = 26) 
-
-        
-        
-
-        for idx in range(len(self.kandles)):
-            # _closes = self.df['Close'].to_numpy()
-            _closes = np.nan_to_num(self.df['HKClose'].to_numpy())
-            _opens = np.nan_to_num(self.df['HKOpen'].to_numpy())
-            _current_close = _closes[:idx+1] 
-            macd =  self.fast_ma[idx] -  self.slow_ma[idx]
-            _signals.append(macd)
-            #   isBearish = high < high[1]
-
-            close = _closes[idx]
-            time = datetime.fromtimestamp(self.kandles[idx][0]/1000)
-
-            if idx < 2 : continue
-
-            # enter = ta.crossover(rsi , rsiMA50)  and not placeOrder and trend and entryFilter
+            else: 
+                # print("SKIP NOW")
+                # continue
+                pass
 
 
+            # for each coin 
+            # for idx in range(len(self.coins)):
+            for idx in range(len(self.dates)):
+                # p("ON", self.coins[idx]['symbol'])
 
 
+                interval = '5m'
+                now = datetime.utcnow()
+                unixtime = calendar.timegm(now.utctimetuple())
+                since = (unixtime - 60*60) * 1000 # UTC timestamp in milliseconds
+                # start_dt = datetime.fromtimestamp(ohlcv[0][0]/1000)
+                date_test = self.dates[idx] #self.dates[idx] # "2022-12-29 00:00:00"
+                ohlcv_ = Ohlcv("XRP/USDT", interval, None, 300)
+                # ohlcv_ = Ohlcv(self.coins[idx]['symbol'], interval, date_test, 300)
+                kandles = Hkac(ohlcv_.ohlcv).kandles
+                # p(kandles)
+                # kandles = test_data # test data
+
+                df = pd.DataFrame(kandles, columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'HKOpen', 'HKHigh', 'HKLow', 'HKClose'])
+                # indicators
+                rsi_ = talib.RSI(df['HKClose'], timeperiod = 14)
+                rsiMA_ = talib.SMA(rsi_, timeperiod = 14)
+                rsi = np.nan_to_num(rsi_.to_numpy())
+                rsiMA = np.nan_to_num(rsiMA_.to_numpy())
+                # p(datetime.fromtimestamp(df['Time'][-1]/1000), "rsi", rsi[-1], "rsiMA", rsiMA[-1])
+                time_ =  datetime.fromtimestamp(np.nan_to_num(df['Time'].to_numpy()[-1])/1000)
+                close = np.nan_to_num(df['Close'].to_numpy())
+                _open = np.nan_to_num(df['Open'].to_numpy())
+                hkclose = np.nan_to_num(df['HKClose'].to_numpy())
+                # macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+                # print("rsi:", rsi[-1], "rsiMA:", rsiMA[-1], "macd:", macd[-1], "macdsignal:", macdsignal[-1])
+
+                LEFT_BAR = 21
+                RIGHT_BAR = 21
+                hhs = PIVOTHIGH(close, LEFT_BAR, RIGHT_BAR)
+                lls = PIVOTLOW(close, LEFT_BAR, RIGHT_BAR)
+
+                isOrderPlaced = False
+                
+                trades=[]
+                entryPrice = 0
+                exitPrice = 0
+                INVEST = 10
+                FEE = 0.04 
+                LEVERAGE = 20
+
+                # EXPLORING
+
+                hh = [0,0]
+                ll = [0,0]
+                # hh_price = 0
+                # hh_time = "00:00:00 00:00:00"
+                # ll_price = 0
+
+                for index in range(len(df['Close'])):
+                    time =  datetime.fromtimestamp(np.nan_to_num(df['Time'].to_numpy()[index])/1000)
+                    # p_change = percentage(price1, price2) 
+                    
+                    # print(time, "high-",hh[index], "low-", ll[index])
+                    if(not np.isnan(lls[index]) and ll[-1] != lls[index]):
+                        print(time,ll[-1], "last----POINT-------new", lls[index])
+                        ll.append(lls[index])
+
+                    # print(time, percentage(ll[-1], close[index]))
+                    # if(close[index] > hh_price):
+                    #     # hh[-1]['price']  = close[index]
+                    #     # hh[-1]['time']  = _time4
+                    #     hh_price = close[index]
+                    #     hh_time = time
+
+                    last_ll_p = percentage(ll[-2], _open[index])
+                    if(last_ll_p < .05 and not last_ll_p < 0 and not isOrderPlaced):
+                        print(time,"ENTRY", _open[index])
+                        print("last point -", ll[-2])
+                        isOrderPlaced = True
+                        entryPrice = _open[index]
+                        pass
+                    
+                    p_change = percentage(entryPrice, _open[index])
+                    if((p_change > 0.40 or -.1 > p_change) and isOrderPlaced):
+                        print(time,"EXIT", _open[index], p_change,'\n')
+                        isOrderPlaced = False
+                        exitPrice = _open[index]
+
+                        amount = INVEST/entryPrice
+                        exit_size = amount*exitPrice
+                       
+
+                        # LEVERAGE
+                        l_amount = amount*LEVERAGE
+                        l_entry_size = INVEST*LEVERAGE
+                        l_exit_size = exit_size*LEVERAGE
+
+                        amount_entry_fee = price_percentage(l_entry_size, FEE)
+                        amount_exit_fee = price_percentage(l_exit_size, FEE)
+                        pl = (l_exit_size-l_entry_size)-(amount_entry_fee+amount_exit_fee)
+
+                        INVEST = INVEST+pl
+                        trades.append(pl)
+                        pass
 
 
+                print(self.dates[idx], sum(trades), trades)
+                self.month.append(sum(trades))
+
+                exit()
+
+            # end of testing
+            print("MONTH PL-------->",sum(self.month))
+            # self.month.clear()
+            break
 
 
+            
+            
 
-                 
-                        # play
-            # p(self.df['HKOpen'][idx],self.df['HKHigh'][idx], self.df['HKLow'][idx],  self.df['HKClose'][idx], 
-            #  "-----")
-            signal = talib.EMA(np.nan_to_num(_signals), timeperiod = 9)
-            # p(format(close,'.8f'),"<---->",  self.rsi[idx], self.rsiMA[idx])
-            # p(time, format(close,'.8f'),"<---->",  placeOrder)
-
-              # // var isBullish = false
-            isTrend = (self.rsiMA[idx] - self.rsiMA[idx-1]) > 0.05
-            macdSupport = macd > signal[idx]
-           
-
-            # enter
-            if self.rsi[idx] > self.rsiMA[idx]:
-                enter = True
-
-            # p(enter , isTrend , macdSupport , placeOrder)
-
-            if enter and isTrend and macdSupport and not placeOrder:
-                placeOrder = True
-                buyPrice = _opens[idx]
-                p("~GREEN","BUY",  time, "==>",close)
-
-            # exit
-            if self.rsi[idx] <= self.rsiMA[idx] and placeOrder:
-                exit_ = True
-                placeOrder = False
-                enter = False
-                # showBox = True 
-                profit  = close - buyPrice
-                status = "~GREEN" if profit > 0  else "~RED"
-                p("~RED", "SELL", time, "==>", f" profit :({close}-{buyPrice})", status,  profit)
-                p()
-                _profits.append(profit)
-
-
-            # if(len(dirs)>3):
-            #     buySignal = dir == 1 and dirs[-2] == -1
-            #     # if(buySignal and not placeOrder):
-            #     if(buySignal):
-            #         placeOrder = True
-            #         buyPrice  = close
-            #         p("~GREEN","BUY",  time, "==>",close)
-
-            # if(len(dirs)>3):
-            #     sellSignal = dir == -1 and dirs[-2] == 1
-            #     if(sellSignal):
-            #         placeOrder = False
-            #         profit  = close - buyPrice
-            #         p("~RED", "SELL", time, "==>", f"|| profit :({close}-{buyPrice})", profit, " ||")
-
-
-            __color =  "~RED" if close < self.kandles[idx][6] else "~GREEN"
-            __colorRsi =  "~RED" if  self.rsi[idx] < self.rsiMA[idx] else "~BLUE"
-            # p(time, __color,  format(close,'.4f'),  "~END" , __colorRsi, format(self.rsi[idx],'.0f'),  format(self.rsiMa[idx],'.0f'))
-
-        # p(self.kandles)
-        p(datetime.fromtimestamp(self.kandles[0][0]/1000), "======",len(self.kandles))
-        # p("----", dirs)
-        # p(_profits)
-        p(datetime.fromtimestamp(self.kandles[-1][0]/1000), self.kandles[-2][9])
-
-
-
-
-bot = HKA({"symbol": "TRX/BUSD"})
+#  MAIN
+bot = Boat()
 bot.run()
+# print(test_data)
 
-# pr.filter(_=> _ > 0).reduce((a, b)=> Math.abs(a)+Math.abs(b), 0)
+# bot = Scalp({"symbol": "LUNC/USDT"}, '1m', 12.22)
+
+# loop = asyncio.get_event_loop()
+# loop.run_until_complete(bot.run())
+
+# loop.close()
+
+# UTILS
+# def percentage(num1, num2):
+#     return 100-((num1/num2)*100)
+# print(percentage(0.3366, 0.3369))
+
+# Trailing test
+# changes = [0.08, 0.04, 0.12, 0.18, 0.22 ,0.31, 0.35,  0.32, 0.38, 0.41, 0.39]
+# min_trailing = 0.2
+# trailing = 0.2
+# enableTrailing = False
+# for ch in changes:
+#     print("->", ch, trailing)
+#     if(ch > trailing):
+#         trailing += 0.1
+#         enableTrailing = True
+
+#     if(ch < trailing-0.1 and enableTrailing):
+#         print("leave")
+#    p_change = percentage(entryPrice, close[index-1]) 
+#                     trailing = 0.2
+#                     if(p_change > trailing+0.1)
+#                         trailing += trailing+0.1
+
+
+# print(tpsl_price(1000, 2)['tp'], tpsl_price(1000, 1)['sl'])
