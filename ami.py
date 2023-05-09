@@ -116,13 +116,14 @@ class Boat:
                 LEVERAGE = 20
 
                 # EXPLORING
-                hh = [0,0]
-                ll = [0,0]
+                hh = [0]
+                ll = [0]
                 farFrom = 0
                 breakout =  False
 
                 for index in range(len(df['Close'])):
                     time =  datetime.fromtimestamp(np.nan_to_num(df['Time'].to_numpy()[index])/1000)
+                    closes_now = close[0: index]
                     # p_change = percentage(price1, price2) 
                     
                     # print(time, "high-",hh[index], "low-", ll[index])
@@ -132,11 +133,19 @@ class Boat:
                         farFrom = 0
                     farFrom += 1
 
+                    # breake out
+                    breakout = True in (ele > _open[index] for ele in ll[1:])
+                    print(breakout)
+
+
 
                     # ENTRY ////////////////////////////////////////////////////////
                     last_ll_p = percentage(ll[-1], _open[index])
                     entry_common = not isOrderPlaced and farFrom > RIGHT_BAR
                     entry_height = last_ll_p < .05 and not last_ll_p < 0
+
+                    # if(index > 26):
+                    #     print("tail_low", talib.MIN(closes_now)[-1])
 
                     if(entry_height and entry_common):
                         print(time,"ENTRY", _open[index])
