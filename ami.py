@@ -122,6 +122,8 @@ class Boat:
                 breakout =  False
 
                 for index in range(len(df['Close'])):
+                    if(index < 26):continue
+
                     time =  datetime.fromtimestamp(np.nan_to_num(df['Time'].to_numpy()[index])/1000)
                     closes_now = close[0: index]
                     # p_change = percentage(price1, price2) 
@@ -135,7 +137,7 @@ class Boat:
 
                     # breake out
                     breakout = True in (ele > _open[index] for ele in ll[1:])
-                    print(breakout)
+                    # print(breakout)
 
 
 
@@ -144,10 +146,16 @@ class Boat:
                     entry_common = not isOrderPlaced and farFrom > RIGHT_BAR
                     entry_height = last_ll_p < .05 and not last_ll_p < 0
 
+                    tail_low_p = percentage(talib.MIN(closes_now)[-1], _open[index])
+                    # print("tail_low_p", tail_low_p)
+                    breakout_entry = True if (breakout and tail_low_p > .5 ) else False
+                    if(breakout_entry):print(time, "tail_low_p", tail_low_p)
+
                     # if(index > 26):
                     #     print("tail_low", talib.MIN(closes_now)[-1])
 
-                    if(entry_height and entry_common):
+                    if(((entry_height and entry_common) or (breakout_entry and not isOrderPlaced))):
+                        if(breakout_entry):print("breakout_entry))))))))))))))))")
                         print(time,"ENTRY", _open[index])
                         print("last point -", ll[-1])
                         isOrderPlaced = True
@@ -157,7 +165,7 @@ class Boat:
 
                     # EXIT /////////////////////////////////////////////////////////
                     p_change = percentage(entryPrice, _open[index])
-                    if((p_change > 0.40 or -.1 > p_change) and isOrderPlaced):
+                    if((p_change > 0.40 or -0.1 > p_change) and isOrderPlaced):
                         print(time,"EXIT", _open[index], p_change,'\n')
                         isOrderPlaced = False
                         exitPrice = _open[index]
