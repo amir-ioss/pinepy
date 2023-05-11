@@ -120,6 +120,7 @@ class Boat:
                 ll = [0]
                 farFrom = 0
                 breakout =  False
+                # breakoutEntry =  False
 
                 for index in range(len(df['Close'])):
                     if(index < 26):continue
@@ -130,34 +131,43 @@ class Boat:
                     
                     # print(time, "high-",hh[index], "low-", ll[index])
                     if(not np.isnan(lls[index]) and ll[-1] != lls[index]):
-                        print(time,ll[-1], "last----POINT-------new", lls[index])
+                        # print(time,ll[-1], "last----POINT-------new", lls[index])
                         ll.append(lls[index])
+                        # if(ll[-1]==0):
+                        #     ll = [lls[index]]
+                        # else:
+                        #     ll.append(lls[index])
                         farFrom = 0
                     farFrom += 1
 
                     # breake out
                     breakout = True in (ele > _open[index] for ele in ll[1:])
-                    # print(breakout)
+                    # breakout = True if (_open[index] < min(ll)) else False 
+                    # print(time, breakout)
 
 
 
                     # ENTRY ////////////////////////////////////////////////////////
                     last_ll_p = percentage(ll[-1], _open[index])
                     entry_common = not isOrderPlaced and farFrom > RIGHT_BAR
-                    entry_height = last_ll_p < .05 and not last_ll_p < 0
+                    entry_height = last_ll_p < .05 and not -.05 > last_ll_p 
+                    # print(time, last_ll_p)
 
-                    tail_low_p = percentage(talib.MIN(closes_now)[-1], _open[index])
-                    # print("tail_low_p", tail_low_p)
-                    breakout_entry = True if (breakout and tail_low_p > .5 ) else False
-                    if(breakout_entry):print(time, "tail_low_p", tail_low_p)
+                    tail_low = talib.MIN(closes_now)[-1]
+                    tail_low_p = percentage(tail_low, _open[index])
+                    # print(time,breakout, ll,  "tail_low_p", tail_low_p)
+                    breakout_entry = True if (breakout and tail_low_p > .2) else False
 
                     # if(index > 26):
                     #     print("tail_low", talib.MIN(closes_now)[-1])
 
                     if(((entry_height and entry_common) or (breakout_entry and not isOrderPlaced))):
-                        if(breakout_entry):print("breakout_entry))))))))))))))))")
+                        print("last point -", ll)
+                        if(breakout_entry):
+                            # breakoutEntry = True
+                            ll = [tail_low]
+                            print("###########", ll)
                         print(time,"ENTRY", _open[index])
-                        print("last point -", ll[-1])
                         isOrderPlaced = True
                         entryPrice = _open[index]
                         pass
@@ -165,10 +175,11 @@ class Boat:
 
                     # EXIT /////////////////////////////////////////////////////////
                     p_change = percentage(entryPrice, _open[index])
-                    if((p_change > 0.40 or -0.1 > p_change) and isOrderPlaced):
-                        print(time,"EXIT", _open[index], p_change,'\n')
+                    if((p_change > 0.40 or -0.2 > p_change) and isOrderPlaced):
+                        print(time,"EXIT", _open[index], f'{p_change:.2f}'+'%','\n')
                         isOrderPlaced = False
                         exitPrice = _open[index]
+                        breakout = False
 
                         amount = INVEST/entryPrice
                         exit_size = amount*exitPrice
@@ -185,6 +196,7 @@ class Boat:
 
                         INVEST = INVEST+pl
                         trades.append(pl)
+                        # if(len(trades) == 3):exit()
                         pass
 
                # RESULTS //////////////////////////////////////////////////////////////////
