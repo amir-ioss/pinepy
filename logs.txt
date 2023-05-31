@@ -1,0 +1,63 @@
+https://codepen.io/gayane-gasparyan/pen/jOmaBQK
+
+SVG PATH
+
+
+import React, { useState, useEffect } from 'react'
+
+function Path({ path }) {
+  {
+    /* MoveTo: M, m
+LineTo: L, l, H, h, V, v
+Cubic Bézier Curve: C, c, S, s
+Quadratic Bézier Curve: Q, q, T, t
+Elliptical Arc Curve: A, a
+ClosePath: Z, z */
+  }
+  const curv = 100
+  return (
+    <path
+      // d="M 10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80"
+
+      // HORIZONTAL
+      // d={`M ${path.x0} ${path.y0} C ${path.x0+curv} ${path.y0}, ${path.x1-curv} ${path.y1}, ${path.x1} ${path.y1}`}
+
+      // VERTICAL
+      d={`M ${path.x0} ${path.y0} C ${path.x0} ${path.y0 - curv}, ${path.x1} ${
+        path.y1 + curv
+      }, ${path.x1} ${path.y1}`}
+      stroke="black"
+      fill="transparent"
+    />
+  )
+}
+// home
+function App() {
+  return (
+    <div>
+      <svg
+        width="1000"
+        height="700"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ position: 'absolute', top: 0, left: 0 }}
+      >
+        {new Array(10).fill('*').map((_, k) => {
+          return (
+            <Path
+              key={k}
+              path={{
+                x0: Math.random() * 1000,
+                y0: Math.random() * 1000,
+                x1: Math.random() * 1000,
+                y1: Math.random() * 1000,
+              }}
+            />
+          )
+        })}
+      </svg>
+      <p style={{ fontSize: 200 }}>This is Test</p>
+    </div>
+  )
+}
+
+export default App
